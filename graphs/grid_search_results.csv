@@ -1,0 +1,13 @@
+﻿data_variant,feature_set,best_balanced_accuracy_cv,refit_time,C,penalty,solver,pca_components
+team_last_20,no_totals,0.6323,0.0276,0.25,l1,liblinear,15.0
+team_last_30,no_totals,0.631,0.0291,0.25,l1,liblinear,15.0
+team_last_40,no_totals,0.6299,0.0289,0.25,l1,liblinear,15.0
+team_last_20,no_prc,0.6299,0.0267,0.25,l1,liblinear,10.0
+team_last_30,no_prc,0.6298,0.2499,0.75,l2,liblinear,10.0
+team_all_season,no_totals,0.6291,0.0225,1.0,l1,liblinear,5.0
+team_last_20,all,0.6284,0.0562,0.25,l1,saga,15.0
+team_last_40,no_prc,0.6281,0.04,0.75,l2,saga,10.0
+team_all_season,no_prc,0.627,0.0362,0.25,l1,liblinear,
+team_last_30,all,0.6259,0.0654,1.25,l2,liblinear,10.0
+team_all_season,all,0.6259,0.0546,0.25,l1,liblinear,
+team_last_40,all,0.6245,0.0347,2.0,l1,liblinear,15.0
