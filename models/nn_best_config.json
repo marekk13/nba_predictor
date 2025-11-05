@@ -1,0 +1,19 @@
+{
+    "data_variant": "team_last_20",
+    "feature_set": "no_totals",
+    "best_balanced_accuracy_cv": 0.6306604175847832,
+    "refit_time": 9.368003129959106,
+    "pca__n_components": 5,
+    "model__optimizer_name": "adamw",
+    "model__learning_rate": 0.001,
+    "model__hidden_layer3_size": 10,
+    "model__hidden_layer3_activation": "tanh",
+    "model__hidden_layer2_size": 20,
+    "model__hidden_layer2_activation": "tanh",
+    "model__hidden_layer1_size": 60,
+    "model__hidden_layer1_activation": "tanh",
+    "model__dropout3_rate": 0.1,
+    "model__dropout2_rate": 0.3,
+    "model__dropout1_rate": 0.3,
+    "model__batch_size": 128
+}

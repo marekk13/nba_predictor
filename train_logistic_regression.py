@@ -1,18 +1,20 @@
 import pandas as pd
 import sqlite3
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pickle
 
-from sklearn.model_selection import GridSearchCV, cross_val_predict, TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix, balanced_accuracy_score
 
-from src.model_utils import prepare_data
+from src.model_utils import (
+    prepare_data,
+    process_search_results,
+    save_config_to_json,
+    find_best_threshold,
+    evaluate_and_save_artifacts
+)
 
 DB_PATH = 'data/transformed/team_moving_avgs_merged.sqlite'
 pd.set_option('display.max_columns', 20)
@@ -64,78 +66,26 @@ for data_name, data_df in data_variants.items():
             **grid_search.best_params_
         })
 
-results_df = pd.DataFrame(results).sort_values(by='best_balanced_accuracy_cv', ascending=False)
+best_config = process_search_results(results, 'graphs/lr_grid_search_results.csv')
+save_config_to_json(best_config, 'models/lr_best_config.json')
 
-results_df_readable = results_df.rename(columns={
-    'model__C': 'C',
-    'model__penalty': 'penalty',
-    'model__solver': 'solver',
-    'pca__n_components': 'pca_components'
-})
-
-results_df_readable['best_balanced_accuracy_cv'] = results_df_readable['best_balanced_accuracy_cv'].round(4)
-results_df_readable['refit_time'] = results_df_readable['refit_time'].round(4)
-
-print("\nWyniki GridSearch:")
-print(results_df_readable)
-
-output_path = 'graphs/grid_search_results.csv'
-results_df_readable.to_csv(output_path, index=False, encoding='utf-8-sig')
-
-best_config = results_df.iloc[0]
-print("\nNajlepsza znaleziona konfiguracja ")
-print(best_config)
-
+# trening i ewaluacja modelu na najlepszych znalezionych parametrach
 best_data_df = data_variants[best_config['data_variant']]
 X_train_best, X_test_best, y_train_best, y_test_best = prepare_data(best_data_df, best_config['feature_set'])
 
-# trening dla najlepszych parametrów
 final_pipeline = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA(n_components=int(best_config['pca__n_components']))),
+    ('pca', PCA(n_components=int(best_config.get('pca__n_components')))),
     ('model', LogisticRegression(
-        C=best_config['model__C'],
-        penalty=best_config['model__penalty'],
-        solver=best_config['model__solver'],
-        max_iter=3000
+        C=best_config['model__C'], penalty=best_config['model__penalty'],
+        solver=best_config['model__solver'], max_iter=3000
     ))
 ])
 final_pipeline.fit(X_train_best, y_train_best)
 
-# badanie najlepszego progu prawdopodobieństwa do klasyfikacji
-tscv = TimeSeriesSplit(n_splits=5)
-# prawdopodobieństwa, że wygrają gospodarze
-y_train_pred_proba = cross_val_predict(final_pipeline, X_train_best, y_train_best, cv=tscv, method='predict_proba')[:, 1]
-thresholds_to_check = np.linspace(0, 1, 201)
-ba_scores = []
-for threshold in thresholds_to_check:
-    y_pred_loop = (y_train_pred_proba >= threshold).astype(int)
-    score = balanced_accuracy_score(y_train_best, y_pred_loop)
-    ba_scores.append(score)
-
-best_ba_index = np.argmax(ba_scores)
-best_threshold = thresholds_to_check[best_ba_index]
-max_ba = ba_scores[best_ba_index]
-
-print(f"Najwyższy osiągnięty Balanced Accuracy na zbiorze treningowym (CV): {max_ba:.4f}")
-print(f"Najlepszy próg decyzyjny maksymalizujący Balanced Accuracy: {best_threshold:.4f}")
-
-y_pred_proba_test = final_pipeline.predict_proba(X_test_best)[:, 1]
-y_pred_final = (y_pred_proba_test >= best_threshold).astype(int)
-
-print("\n RAPORT KLASYFIKACJI (z progiem prawdopodobieństwa = {:.4f}) ".format(best_threshold))
-print(classification_report(y_test_best, y_pred_final))
-
-conf_matrix = confusion_matrix(y_test_best, y_pred_final)
-plt.figure(figsize=(8, 6))
-sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
-            xticklabels=['0 - wygrana gości', '1 - wygrana gospodarzy'],
-            yticklabels=['0 - wygrana gości', '1 - wygrana gospodarzy'])
-plt.xlabel("Przewidywane klasy")
-plt.ylabel("Rzeczywiste klasy")
-plt.title("Macierz pomyłek dla regresji logistycznej")
-plt.savefig("graphs/confusion_matrix_lr.png", dpi=300, bbox_inches='tight')
-plt.show()
-
-with open('models/LR_model.pkl', 'wb') as file:
-    pickle.dump(final_pipeline, file)
+best_threshold = find_best_threshold(final_pipeline, X_train_best, y_train_best)
+evaluate_and_save_artifacts(
+    pipeline=final_pipeline, X_test=X_test_best, y_test=y_test_best,
+    threshold=best_threshold, model_name="LR",
+    class_names=['Wygrana gości (0)', 'Wygrana gospodarzy (1)']
+)

@@ -1,0 +1,10 @@
+{
+    "data_variant": "team_last_20",
+    "feature_set": "no_totals",
+    "best_balanced_accuracy_cv": 0.6324122187378437,
+    "refit_time": 0.013252019882202148,
+    "model__C": 0.25,
+    "model__penalty": "l1",
+    "model__solver": "liblinear",
+    "pca__n_components": 15.0
+}

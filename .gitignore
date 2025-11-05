@@ -2,4 +2,7 @@
 .ipynb_checkpoints/
 venv/
 helpers/
+scrapers/
 data/start/backup
+__pycache__
+src/__pycache__
