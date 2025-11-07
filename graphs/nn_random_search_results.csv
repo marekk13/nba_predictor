@@ -1,0 +1,5 @@
+﻿data_variant,feature_set,best_balanced_accuracy_cv,refit_time,n_components,optimizer_name,learning_rate,hidden_layer3_size,hidden_layer3_activation,hidden_layer2_size,hidden_layer2_activation,hidden_layer1_size,hidden_layer1_activation,dropout3_rate,dropout2_rate,dropout1_rate,batch_size
+team_last_20,no_totals,0.6306,6.9655,5,adamw,0.001,10,tanh,20,tanh,60,tanh,0.1,0.3,0.3,128
+team_all_season,no_totals,0.628,8.6,5,adamw,0.001,10,tanh,20,tanh,60,tanh,0.1,0.3,0.3,128
+team_last_20,all,0.623,9.9059,20,adam,0.001,15,tanh,15,tanh,50,tanh,0.2,0.3,0.1,64
+team_all_season,all,0.6227,13.8465,20,adam,0.001,15,tanh,15,tanh,50,tanh,0.2,0.3,0.1,64

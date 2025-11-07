@@ -1,8 +1,8 @@
 {
     "data_variant": "team_last_20",
     "feature_set": "no_totals",
-    "best_balanced_accuracy_cv": 0.6306604175847832,
-    "refit_time": 9.368003129959106,
+    "best_balanced_accuracy_cv": 0.6306135221398869,
+    "refit_time": 6.965514898300171,
     "pca__n_components": 5,
     "model__optimizer_name": "adamw",
     "model__learning_rate": 0.001,
