@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, balanced_accuracy_score
 from sklearn.model_selection import TimeSeriesSplit
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Input
+from tensorflow.keras.optimizers import Adam, AdamW, RMSprop
+
 
 THRESHOLD_DATE = '2022-10-01'
 TARGET_COLUMN = 'home_win'
@@ -122,9 +126,54 @@ def evaluate_and_save_artifacts(pipeline, X_test, y_test, threshold, model_name,
     plt.ylabel("Rzeczywiste klasy")
     plt.title(f"Macierz pomyłek dla {model_name}")
     plt.savefig(cm_path, dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.close()
 
-    pipeline_path = f"models/{model_name.upper()}_pipeline.pkl"
-    with open(pipeline_path, 'wb') as f:
+    model_path = f"models/{model_name.upper()}_model.pkl"
+    with open(model_path, 'wb') as f:
         pickle.dump(pipeline, f)
-    print(f"Finalny potok zapisany do pliku {pipeline_path}")
+    print(f"Finalny potok zapisany do pliku: {model_path}")
+
+    threshold_path = f"models/{model_name.upper()}_threshold.pkl"
+    with open(threshold_path, 'wb') as f:
+        pickle.dump(threshold, f)
+    print(f"Próg decyzyjny zapisany do pliku: {threshold_path}")
+
+    feature_names_path = f"models/{model_name.upper()}_feature_names.pkl"
+    feature_names = list(X_test.columns)
+    with open(feature_names_path, 'wb') as f:
+        pickle.dump(feature_names, f)
+    print(f"Lista nazw cech zapisana do pliku: {feature_names_path}")
+
+
+def create_model(hidden_layer1_size=40, hidden_layer1_activation='relu', dropout1_rate=0.2,
+                 hidden_layer2_size=20, hidden_layer2_activation='relu', dropout2_rate=0.2,
+                 hidden_layer3_size=0, hidden_layer3_activation='relu', dropout3_rate=0.2,
+                 learning_rate=0.001, optimizer_name='adam', meta=None):
+    n_features_in = meta["n_features_in_"]
+
+    model = Sequential([
+        Input(shape=(n_features_in,)),
+        Dense(hidden_layer1_size, activation=hidden_layer1_activation),
+        Dropout(dropout1_rate),
+        Dense(hidden_layer2_size, activation=hidden_layer2_activation),
+        Dropout(dropout2_rate)
+    ])
+
+    if hidden_layer3_size > 0:
+        model.add(Dense(hidden_layer3_size, activation=hidden_layer3_activation))
+        model.add(Dropout(dropout3_rate))
+
+    model.add(Dense(1, activation='sigmoid'))
+
+    if optimizer_name == 'adam':
+        optimizer = Adam(learning_rate=learning_rate)
+    elif optimizer_name == 'adamw':
+        optimizer = AdamW(learning_rate=learning_rate)
+    elif optimizer_name == 'rmsprop':
+        optimizer = RMSprop(learning_rate=learning_rate)
+    else:
+        optimizer = Adam(learning_rate=learning_rate)
+
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+
+    return model
