@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 from datetime import date
 from pathlib import Path
 
+from src.model_utils import create_model
+
 app = FastAPI(
     title="NBA Match Outcome Predictor API",
     description="Statyczne API do odtwarzania predykcji dla meczów NBA z lat 2017-2024 na podstawie wytrenowanych modeli.",
@@ -22,7 +24,7 @@ app_state = {}
 class PredictionRequest(BaseModel):
     home_team_abbr: str = Field(..., description="Skrót drużyny gospodarzy (np. 'GSW')", example="GSW")
     away_team_abbr: str = Field(..., description="Skrót drużyny gości (np. 'HOU')", example="HOU")
-    game_date: date = Field(..., description="Data meczu w formacie YYYY-MM-DD", example="2023-12-25")
+    game_date: date = Field(..., description="Data meczu w formacie YYYY-MM-DD", example="2019-01-03")
 
 
 class PredictionResponse(BaseModel):
@@ -31,6 +33,7 @@ class PredictionResponse(BaseModel):
     game_date: date
     prediction: str
     win_probability_home: float = Field(..., description="Prawdopodobieństwo wygranej gospodarzy")
+    probability_threshold: float = Field(..., description="Optymalny próg prawdopodobieństwa")
     model_used: str = Field(..., description="Model użyty do predykcji (np. 'LR' lub 'NN')")
 
 
@@ -76,8 +79,6 @@ def load_artifacts_and_data():
             app_state[model_name]['features'] = pickle.load(f)
         print(f"Artefakty dla modelu {model_name} załadowane.")
 
-    print("--- Serwer gotowy do przyjmowania zapytań ---")
-
 
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -110,6 +111,12 @@ def predict_outcome(request: PredictionRequest):
 
     feature_vector = match_row_df[feature_names]
 
+    if feature_vector.isnull().values.any():
+        raise HTTPException(
+            status_code=422,
+            detail=f"Znaleziono brakujące dane dla tego meczu. Nie można wykonać predykcji."
+        )
+
     win_probability = model_pipeline.predict_proba(feature_vector)[0][1]
     prediction_code = 1 if win_probability >= threshold else 0
     prediction_text = "Wygrana gospodarzy" if prediction_code == 1 else "Wygrana gości"
@@ -120,5 +127,6 @@ def predict_outcome(request: PredictionRequest):
         game_date=request.game_date,
         prediction=prediction_text,
         win_probability_home=round(win_probability, 4),
+        probability_threshold = round(threshold, 4),
         model_used=model_name
     )
