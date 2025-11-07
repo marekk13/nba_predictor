@@ -73,9 +73,13 @@ save_config_to_json(best_config, 'models/lr_best_config.json')
 best_data_df = data_variants[best_config['data_variant']]
 X_train_best, X_test_best, y_train_best, y_test_best = prepare_data(best_data_df, best_config['feature_set'])
 
+n_components_value = best_config.get('pca__n_components')
+if n_components_value is not None:
+    n_components_value = int(n_components_value)
+
 final_pipeline = Pipeline([
     ('scaler', StandardScaler()),
-    ('pca', PCA(n_components=int(best_config.get('pca__n_components')))),
+    ('pca', PCA(n_components=PCA(n_components=n_components_value))),
     ('model', LogisticRegression(
         C=best_config['model__C'], penalty=best_config['model__penalty'],
         solver=best_config['model__solver'], max_iter=3000

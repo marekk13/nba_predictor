@@ -19,7 +19,8 @@ from src.model_utils import (
     process_search_results,
     save_config_to_json,
     find_best_threshold,
-    evaluate_and_save_artifacts
+    evaluate_and_save_artifacts,
+    create_model
 )
 
 np.random.seed(42)
@@ -45,39 +46,6 @@ feature_sets = {
     'all': 'Wszystkie cechy',
     'no_totals': 'Bez cech `totals`',
 }
-
-def create_model(hidden_layer1_size=40, hidden_layer1_activation='relu', dropout1_rate=0.2,
-                 hidden_layer2_size=20, hidden_layer2_activation='relu', dropout2_rate=0.2,
-                 hidden_layer3_size=0, hidden_layer3_activation='relu', dropout3_rate=0.2,
-                 learning_rate=0.001, optimizer_name='adam', meta=None):
-    n_features_in = meta["n_features_in_"]
-
-    model = Sequential([
-        Input(shape=(n_features_in,)),
-        Dense(hidden_layer1_size, activation=hidden_layer1_activation),
-        Dropout(dropout1_rate),
-        Dense(hidden_layer2_size, activation=hidden_layer2_activation),
-        Dropout(dropout2_rate)
-    ])
-
-    if hidden_layer3_size > 0:
-        model.add(Dense(hidden_layer3_size, activation=hidden_layer3_activation))
-        model.add(Dropout(dropout3_rate))
-
-    model.add(Dense(1, activation='sigmoid'))
-
-    if optimizer_name == 'adam':
-        optimizer = Adam(learning_rate=learning_rate)
-    elif optimizer_name == 'adamw':
-        optimizer = AdamW(learning_rate=learning_rate)
-    elif optimizer_name == 'rmsprop':
-        optimizer = RMSprop(learning_rate=learning_rate)
-    else:
-        optimizer = Adam(learning_rate=learning_rate)
-
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
-
-    return model
 
 
 keras_clf = KerasClassifier(
